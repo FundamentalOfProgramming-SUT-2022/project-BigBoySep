@@ -25,7 +25,6 @@ void create_file(){
         tmp[i] = dir[i];
     }
     FILE *fp;
-    // printf("%s\n",tmp);
     fp = fopen(tmp,"w");
     empty(tmp);
     fclose(fp);
