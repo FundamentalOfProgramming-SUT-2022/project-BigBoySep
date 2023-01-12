@@ -14,6 +14,11 @@ void empty(char str[]){
 }
 
 void create_file(){
+    if (access(dir, F_OK) == 0) {
+        // file exists
+        printf("File exists\n");
+        return;
+    }
     for(int i =0;i<strlen(dir);i++){
         // printf("%s\n",tmp);
         if(dir[i] == '/'){
