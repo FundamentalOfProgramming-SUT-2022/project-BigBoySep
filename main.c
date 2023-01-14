@@ -73,6 +73,22 @@ void insertstr(){
     memset(tmp,0,sizeof(tmp));
 }
 
+void cat(){
+    if (access(dir, F_OK) != 0) {
+        // file not exists
+        printf("File doesn't exist\n");
+        return;
+    }
+    FILE *fp;
+    fp = fopen(dir,"r");
+    char c = fgetc(fp);
+    while (c!=EOF){
+        printf("%c",c);
+        c = fgetc(fp);
+    }
+    printf("\n");
+    fclose(fp);
+}
 void input(){
     if(strcmp(command,"createfile") == 0){
         scanf("%s",command);
@@ -94,6 +110,7 @@ void input(){
         return;
     }else if(strcmp(command,"insertstr") == 0){
         scanf("%s",command);
+        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -110,7 +127,7 @@ void input(){
         if (access(dir, F_OK) == 0) {
         }else{
             printf("file not found\n");
-            bool not_found = true;
+            not_found = true;
         }
         c = getchar();
         scanf("%s",command);
@@ -169,10 +186,28 @@ void input(){
         c = getchar();
         scanf("%d:%d",&line,&pos);
         // printf("%s",str);
-        insertstr();
+        if(!not_found) insertstr();
         memset(str,0,sizeof(str));
         return;
         
+    }else if(strcmp(command,"cat") == 0){
+        scanf("%s",command);
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        // printf("%s\n",dir);
+        cat();
+        return;
     }else{
         printf("invalid command\n");
         gets(command);
