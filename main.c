@@ -6,7 +6,8 @@
 #include <errno.h>
 #include <string.h>
 
-int line,pos;
+bool forward = false;
+int line,pos,size;
 char command[50],dir[100],tmp[100],str[1000],buff_str[1000];
 
 
@@ -89,6 +90,58 @@ void cat(){
     printf("\n");
     fclose(fp);
 }
+
+// how many roads must a man?
+
+void removestr(bool fward){
+    FILE *fp,*tmpf;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____temp.txt"); 
+    tmpf = fopen(tmp,"w+");
+    fp = fopen(dir,"r");
+    int t=0,p=0,l=1,ts;
+    // 12345678910
+    if(p==pos && l==line) ts=t;
+    char c = fgetc(fp);
+    t++;
+    p++;
+    if(c=='\n') l++;
+    while (c!=EOF){
+        if(c=='\n'){ 
+            l++;
+            p=0;
+        }
+        if(p==pos && l==line) ts=t;
+        c = fgetc(fp);
+        t++;
+        p++;
+    }
+    // 1235678910
+    fseek(fp,0,SEEK_SET);
+    rewind(fp);
+    c = fgetc(fp);
+    t=1;
+    while (c!=EOF){
+        if(fward){
+            if(!(t>ts && t<=ts+size)){
+                fputc(c,tmpf);
+            }
+        }
+        if(!fward){
+            if(!(t<=ts && t>ts-size)){
+                fputc(c,tmpf);
+            }
+        }
+        c = fgetc(fp);
+        t++;
+    }
+    fclose(tmpf);
+    fclose(fp);
+    remove(dir);
+    rename(tmp,dir);
+    memset(tmp,0,sizeof(tmp));
+}
+
 void input(){
     if(strcmp(command,"createfile") == 0){
         scanf("%s",command);
@@ -208,6 +261,41 @@ void input(){
         // printf("%s\n",dir);
         cat();
         return;
+    }else if(strcmp(command,"removestr") == 0){
+        scanf("%s",command);
+        bool not_found = false;
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        if (access(dir, F_OK) == 0) {
+        }else{
+            printf("file not found\n");
+            not_found = true;
+        }
+        c = getchar();
+        scanf("%s",command);
+        c = getchar();
+        scanf("%d:%d",&line,&pos);
+        c = getchar();
+        scanf("%s",command);
+        scanf("%d",&size);
+        // c = getchar();
+        scanf("%s",command);
+        if(command[1] == 'f') forward = true;
+        else forward = false;
+        removestr(forward);
+        return; 
+
     }else{
         printf("invalid command\n");
         gets(command);
