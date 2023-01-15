@@ -8,7 +8,7 @@
 
 bool forward = false;
 int line,pos,size;
-char command[50],dir[100],tmp[100],str[1000],buff_str[1000];
+char command[50],dir[100],tmp[100],str[1000],buff_str[1000],clipboard[1000];
 
 
 void createfile(){
@@ -33,7 +33,7 @@ void createfile(){
     fclose(fp);
 }
 //insertstr
-void insertstr(){
+void insertstr(const char *ins){
     FILE *fp,*tmpf;
     fp = fopen(dir,"r");
     strncpy(tmp,dir,strlen(dir)-4);
@@ -49,11 +49,11 @@ void insertstr(){
         if(line == current_line){
             for(int i =0;i<strlen(buff_str);i++){
                 if(i==pos)
-                    fputs(str,tmpf);
+                    fputs(ins,tmpf);
                 fputc(buff_str[i],tmpf);
             }
             if(strlen(buff_str) == pos)
-                fputs(str,tmpf);
+                fputs(ins,tmpf);
             // fprintf(tmpf,"chert\nchert");
             // printf("aa\n");
             // printf("%s",str);
@@ -65,7 +65,7 @@ void insertstr(){
     }
     if(current_line == line){
         fputc('\n',tmpf);
-        fputs(str,tmpf);
+        fputs(ins,tmpf);
     }
     fclose(tmpf);
     fclose(fp);
@@ -90,8 +90,6 @@ void cat(){
     printf("\n");
     fclose(fp);
 }
-
-// how many roads must a man?
 
 void removestr(bool fward){
     FILE *fp,*tmpf;
@@ -139,6 +137,110 @@ void removestr(bool fward){
     fclose(fp);
     remove(dir);
     rename(tmp,dir);
+    memset(tmp,0,sizeof(tmp));
+}
+
+void cutstr(bool fward){
+    FILE *fp,*tmpf;
+    memset(clipboard,0,sizeof(clipboard));
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____temp.txt"); 
+    tmpf = fopen(tmp,"w+");
+    fp = fopen(dir,"r");
+    int t=0,p=0,l=1,ts;
+    // 12345678910
+    if(p==pos && l==line) ts=t;
+    char c = fgetc(fp);
+    t++;
+    p++;
+    if(c=='\n') l++;
+    while (c!=EOF){
+        if(c=='\n'){ 
+            l++;
+            p=0;
+        }
+        if(p==pos && l==line) ts=t;
+        c = fgetc(fp);
+        t++;
+        p++;
+    }
+    // 1235678910
+    fseek(fp,0,SEEK_SET);
+    rewind(fp);
+    c = fgetc(fp);
+    t=1;
+    int counter = 0;
+    while (c!=EOF){
+        if(fward){
+            if(!(t>ts && t<=ts+size)){
+                fputc(c,tmpf);
+            }else{
+                clipboard[counter] = c;
+                counter++;
+            }
+        }
+        if(!fward){
+            if(!(t<=ts && t>ts-size)){
+                fputc(c,tmpf);
+            }else{
+                clipboard[counter] = c;
+                counter++;
+            }
+        }
+        c = fgetc(fp);
+        t++;
+    }
+    fclose(tmpf);
+    fclose(fp);
+    remove(dir);
+    rename(tmp,dir);
+    memset(tmp,0,sizeof(tmp));
+}
+
+void copystr(bool fward){
+    memset(clipboard,0,sizeof(clipboard));
+    FILE *fp;
+    fp = fopen(dir,"r");
+    int t=0,p=0,l=1,ts;
+    // 12345678910
+    if(p==pos && l==line) ts=t;
+    char c = fgetc(fp);
+    t++;
+    p++;
+    if(c=='\n') l++;
+    while (c!=EOF){
+        if(c=='\n'){ 
+            l++;
+            p=0;
+        }
+        if(p==pos && l==line) ts=t;
+        c = fgetc(fp);
+        t++;
+        p++;
+    }
+    // 1235678910
+    fseek(fp,0,SEEK_SET);
+    rewind(fp);
+    c = fgetc(fp);
+    t=1;
+    int counter=0;
+    while (c!=EOF){
+        if(fward){
+            if((t>ts && t<=ts+size)){
+                clipboard[counter] = c;
+                counter++;
+            }
+        }
+        if(!fward){
+            if((t<=ts && t>ts-size)){
+                clipboard[counter] = c;
+                counter++;
+            }
+        }
+        c = fgetc(fp);
+        t++;
+    }
+    fclose(fp);
     memset(tmp,0,sizeof(tmp));
 }
 
@@ -239,7 +341,7 @@ void input(){
         c = getchar();
         scanf("%d:%d",&line,&pos);
         // printf("%s",str);
-        if(!not_found) insertstr();
+        if(!not_found) insertstr(str);
         memset(str,0,sizeof(str));
         return;
         
@@ -295,8 +397,103 @@ void input(){
         else forward = false;
         removestr(forward);
         return; 
-
-    }else{
+    }else if(strcmp(command,"copystr")==0){
+        scanf("%s",command);
+        bool not_found = false;
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        if (access(dir, F_OK) == 0) {
+        }else{
+            printf("file not found\n");
+            not_found = true;
+        }
+        c = getchar();
+        scanf("%s",command);
+        c = getchar();
+        scanf("%d:%d",&line,&pos);
+        c = getchar();
+        scanf("%s",command);
+        scanf("%d",&size);
+        // c = getchar();
+        scanf("%s",command);
+        if(command[1] == 'f') forward = true;
+        else forward = false;
+        copystr(forward);
+        return; 
+    }else if(strcmp(command,"cutstr")==0){
+        scanf("%s",command);
+        bool not_found = false;
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        if (access(dir, F_OK) == 0) {
+        }else{
+            printf("file not found\n");
+            not_found = true;
+        }
+        c = getchar();
+        scanf("%s",command);
+        c = getchar();
+        scanf("%d:%d",&line,&pos);
+        c = getchar();
+        scanf("%s",command);
+        scanf("%d",&size);
+        // c = getchar();
+        scanf("%s",command);
+        if(command[1] == 'f') forward = true;
+        else forward = false;
+        cutstr(forward);
+        return;
+    }else if(strcmp(command,"pastestr")==0){
+        scanf("%s",command);
+        bool not_found = false;
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        if (access(dir, F_OK) == 0) {
+        }else{
+            printf("file not found\n");
+            not_found = true;
+        }
+        c = getchar();
+        scanf("%s",command);
+        c = getchar();
+        scanf("%d:%d",&line,&pos);
+        if(!not_found) insertstr(clipboard);
+        return;
+    }   
+    else{
         printf("invalid command\n");
         gets(command);
         return;
