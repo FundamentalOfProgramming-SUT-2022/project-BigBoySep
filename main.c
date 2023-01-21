@@ -244,6 +244,82 @@ void copystr(bool fward){
     memset(tmp,0,sizeof(tmp));
 }
 
+void find(int state,int n){
+
+    FILE *fp = fopen(dir,"r");
+    int len = strlen(str),i=0,pos_bychar[100],pos_byword[100],cnt=0,t=0,wcnt=1,ti,wi;
+    char c = fgetc(fp);
+    bool found = false;
+    t++;
+    while (c!=EOF){
+        while (c!=EOF && c==str[i] && ++i<len){
+            c=fgetc(fp);
+            if(i==1){
+                wi = wcnt;
+                ti = t;
+            }
+            if(c==' ' || c=='\n') wcnt++;
+            t++;
+        }
+        if(i==len){
+            pos_bychar[cnt] = (ti-1)*(len!=1) + (t-1)*(len==1);
+            pos_byword[cnt] = wi*(len!=1) + (wcnt)*(len==1);
+            cnt++;
+            found = true;
+        }
+        i=0;
+        c=fgetc(fp);
+        if(c==' ' || c=='\n') wcnt++;
+        t++;
+    }
+    fclose(fp);
+    // all byword at cnt
+    // *1100-0001-*1000-0110-0010-*0100-*0000
+    switch (state)
+    {
+    case 0:
+        if(found) printf("%d\n",pos_bychar[0]);
+        else printf("-1\n");
+        break;
+    case 1000:
+        if(found){
+            for(int i =0;i<cnt;i++){
+                if(i!=0) printf(", %d",pos_bychar[i]);
+                else printf("%d",pos_bychar[i]);
+            }
+            printf("\n");
+        }else printf("-1");
+        break;
+    case 100:
+        if(found) printf("%d\n",pos_byword[0]);
+        else printf("-1\n");
+        break;
+    case 1100:
+        if(found){
+            for(int i =0;i<cnt;i++){
+                if(i!=0) printf(", %d",pos_byword[i]);
+                else printf("%d",pos_byword[i]);
+            }
+            printf("\n");
+        }else printf("-1");
+        break; 
+    case 1:
+        if(found)printf("%d\n",cnt);
+        else printf("0\n");
+        break;
+    case 10:
+        if(found && n<=cnt) printf("%d\n",pos_bychar[n-1]);
+        else printf("-1\n");
+        break;
+    case 110:   
+        if(found && n<=cnt) printf("%d\n",pos_byword[n-1]);
+        else printf("-1\n");
+        break;
+    default:
+        break;
+    }
+}
+
 void input(){
     if(strcmp(command,"createfile") == 0){
         scanf("%s",command);
@@ -493,13 +569,113 @@ void input(){
         if(!not_found) insertstr(clipboard);
         return;
     }   
-    else{
+    else if(strcmp(command,"find")==0){
+        scanf("%s",command);
+        char c = getchar();
+        c = getchar();
+        if(c!='"'){
+            str[0] = c;
+            int t= 1;
+            while ((c=getchar()) != ' ')
+            {
+                str[t] = c;
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                    str[t-1] = '\n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                    str[t-1] = 'n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == '"' && str[t-1] == '\\'){
+                    str[t-1] = '"';
+                    str[t] = '\0';
+                    t--;
+                }
+                t++;
+            }
+        }
+        else{
+            int t =0;
+            // c = getchar();
+            while ((c=getchar()) != '"' || str[t-1] == '\\'){
+                str[t]=c;
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                    str[t-1] = '\n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                    str[t-1] = 'n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == '"' && str[t-1] == '\\'){
+                    str[t-1] = '"';
+                    str[t] = '\0';
+                    t--;
+                }
+                t++;
+            }
+            str[t] = '\0';
+        }
+        c = getchar();
+        scanf("%s",command);
+        bool not_found = false;
+        c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        if (access(dir, F_OK) == 0) {
+        }else{
+            printf("file not found\n");
+            not_found = true;
+        }
+        fgets(command,50,stdin);
+        int state=0,n=0;
+        for(int i =0;i<strlen(command);i++){
+            if(command[i] == '-'){
+                if(command[i+1] == 'c')
+                    state+=1;
+                if(command[i+1] == 'b')
+                    state+=100;
+                if(command[i+2] == 't')
+                    state+=10;
+                if(command[i+2] == 'l')
+                    state+=1000;
+            }
+            if(command[i]>='0' && command[i]<='9'){
+                n*=10;
+                n+=(int)(command[i]-'0');
+            }
+        }
+        // all byword at cnt
+        // salam *ash
+        // 1100-0001-1000-0110-0010-0100-0000
+        if(state==0 || state==100 || state==10 || state==110 || state==1000 || state==1 || state==1100){
+        if(!not_found) find(state,n);
+        }else{
+            printf("unable to combine options");
+        }
+        memset(str,0,sizeof(str));
+        return;
+    }else{
         printf("invalid command\n");
         gets(command);
         return;
     }
 }
-
 
 int main(){
     scanf("%s",command);
