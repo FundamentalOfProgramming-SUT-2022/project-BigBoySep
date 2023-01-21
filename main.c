@@ -8,7 +8,7 @@
 
 bool forward = false;
 int line,pos,size;
-char command[50],dir[100],tmp[100],str[1000],str2[1000],buff_str[1000],clipboard[1000];
+char command[50],dir[100],tmp[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
 
 
 void createfile(){
@@ -397,6 +397,24 @@ void replace(int state,int n){
     memset(tmp,0,sizeof(tmp));
     // all byword at cnt
     // *1100-0001-*1000-0110-0010-*0100-*0000
+}
+
+void grep(int state){
+    FILE *fp = fopen(dir,"r");
+    bool isvalid = false;
+    while (!feof(fp)){
+        fgets(buff_str,1000,fp);
+        if(strstr(buff_str,str)!=NULL){
+            linecounter++;
+            isvalid = true;
+            if(state == 1)
+                printf("%s: %s",dir,buff_str);
+            if(buff_str[strlen(buff_str)-1]!='\n') printf("\n");
+        }
+    }
+    if(state == 3)
+        printf("%s\n",dir);
+    fclose(fp);
 }
 
 void input(){
@@ -901,6 +919,95 @@ void input(){
         }
         memset(str,0,sizeof(str));
         return;
+    }else if(strcmp(command,"grep")==0){
+        int state;
+        linecounter=0;
+        scanf("%s",command);
+        if(strcmp(command,"-c")==0 || strcmp(command,"-l") == 0){ 
+            if(command[1] == 'c')
+                state = 2;
+            if(command[1] == 'l')
+                state = 3;
+            scanf("%s",command);
+        }else state = 1;
+        char c = getchar();
+        c = getchar();
+        if(c!='"'){
+            str[0] = c;
+            int t= 1;
+            while ((c=getchar()) != ' ')
+            {
+                str[t] = c;
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                    str[t-1] = '\n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                    str[t-1] = 'n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == '"' && str[t-1] == '\\'){
+                    str[t-1] = '"';
+                    str[t] = '\0';
+                    t--;
+                }
+                t++;
+            }
+        }
+        else{
+            int t =0;
+            // c = getchar();
+            while ((c=getchar()) != '"' || str[t-1] == '\\'){
+                str[t]=c;
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                    str[t-1] = '\n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                    str[t-1] = 'n';
+                    str[t] = '\0';
+                    t--;
+                }
+                if(str[t] == '"' && str[t-1] == '\\'){
+                    str[t-1] = '"';
+                    str[t] = '\0';
+                    t--;
+                }
+                t++;
+            }
+            str[t] = '\0';
+        }
+        // c = getchar();
+        scanf("%s",command);
+        c = getchar();
+        c = getchar();
+        while (c!='\n'){
+            if(c=='/')
+                scanf("%s",dir);
+            else{
+                int t =0;
+                c = getchar();
+                while ((c=getchar()) != '"'){
+                    dir[t]=c;
+                    t++;
+                }
+                dir[t] = '\0';
+            }
+            grep(state);
+            c = getchar();
+            if(c == '\n'){
+                break;
+            }
+            memset(dir,0,sizeof(dir));
+            c=getchar();
+        }
+        if(state == 2)
+            printf("%d\n",linecounter);
+        memset(str,0,sizeof(str));
+        return;
     }else{
         printf("invalid command\n");
         gets(command);
@@ -915,3 +1022,6 @@ int main(){
         scanf("%s",command);
     }
 }
+
+// How many roads must a man walk down
+// before you call him a "man"?
