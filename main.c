@@ -5,11 +5,33 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <windows.h>
+#include <dirent.h>
 
 bool forward = false;
 int line,pos,size;
-char command[50],dir[100],tmp[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
+char command[50],dir[100],tmp[100],tmp2[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
 
+bool existance(){
+    for(int i =0;i<strlen(dir);i++){
+        if(dir[i] == '/'){
+            DIR* DIR = opendir(tmp);
+            if(DIR){
+            closedir(DIR);
+            }else if(ENOENT == errno) {
+                printf("Wrong Address\n");
+                return false;
+            }
+        }
+        tmp[i] = dir[i];
+    }
+    if (access(dir, F_OK) == 0) {
+        return true;
+    }else{
+        printf("File Does not exist\n");
+        return false;
+    }
+}
 
 void createfile(){
     if (access(dir, F_OK) == 0) {
@@ -27,15 +49,34 @@ void createfile(){
         }
         tmp[i] = dir[i];
     }
-    FILE *fp;
+    FILE *fp,*fpu;
     fp = fopen(tmp,"w");
     memset(tmp,0,sizeof(tmp));
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    fpu = fopen(tmp,"w");
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    memset(tmp,0,sizeof(tmp));
     fclose(fp);
+    fclose(fpu);
 }
 //insertstr
 void insertstr(const char *ins){
     FILE *fp,*tmpf;
     fp = fopen(dir,"r");
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    rewind(fp);
+    fclose(fpu);
+    memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
     tmpf = fopen(tmp,"w+");
@@ -93,14 +134,26 @@ void cat(){
 
 void removestr(bool fward){
     FILE *fp,*tmpf;
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    rewind(fp);
+    fclose(fpu);
+    memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
     tmpf = fopen(tmp,"w+");
-    fp = fopen(dir,"r");
     int t=0,p=0,l=1,ts;
     // 12345678910
     if(p==pos && l==line) ts=t;
-    char c = fgetc(fp);
+    c = fgetc(fp);
     t++;
     p++;
     if(c=='\n') l++;
@@ -142,15 +195,27 @@ void removestr(bool fward){
 
 void cutstr(bool fward){
     FILE *fp,*tmpf;
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    rewind(fp);
+    fclose(fpu);
+    memset(tmp,0,sizeof(tmp));
     memset(clipboard,0,sizeof(clipboard));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
     tmpf = fopen(tmp,"w+");
-    fp = fopen(dir,"r");
     int t=0,p=0,l=1,ts;
     // 12345678910
     if(p==pos && l==line) ts=t;
-    char c = fgetc(fp);
+    c = fgetc(fp);
     t++;
     p++;
     if(c=='\n') l++;
@@ -323,11 +388,24 @@ void find(int state,int n){
 void replace(int state,int n){
 
     FILE *fp = fopen(dir,"r");
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    rewind(fp);
+    fclose(fpu);
+    memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
     FILE *ftmp = fopen(tmp,"w");
     int len = strlen(str),i=0,pos_bychar[100],pos_byword[100],cnt=0,t=0,wcnt=1,ti,wi;
-    char c = fgetc(fp);
+    c = fgetc(fp);
     bool found = false;
     t++;
     while (c!=EOF){
@@ -412,9 +490,23 @@ void grep(int state){
             if(buff_str[strlen(buff_str)-1]!='\n') printf("\n");
         }
     }
-    if(state == 3)
+    if(state == 3 && isvalid == true)
         printf("%s\n",dir);
     fclose(fp);
+}
+
+void undo(){
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt");
+    strncpy(tmp2,dir,strlen(dir)-4);
+    strcat(tmp2,"____undo2.txt");
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    rename(tmp,tmp2);
+    rename(dir,tmp);
+    rename(tmp2,dir);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    memset(tmp,0,sizeof(tmp));
+    memset(tmp2,0,sizeof(tmp2));
 }
 
 void input(){
@@ -438,7 +530,6 @@ void input(){
         return;
     }else if(strcmp(command,"insertstr") == 0){
         scanf("%s",command);
-        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -452,11 +543,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         c = getchar();
         scanf("%s",command);
         c = getchar();
@@ -514,7 +602,7 @@ void input(){
         c = getchar();
         scanf("%d:%d",&line,&pos);
         // printf("%s",str);
-        if(!not_found) insertstr(str);
+        if(found) insertstr(str);
         memset(str,0,sizeof(str));
         return;
         
@@ -533,12 +621,13 @@ void input(){
             }
             dir[t] = '\0';
         }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         // printf("%s\n",dir);
-        cat();
+        if(found)cat();
         return;
     }else if(strcmp(command,"removestr") == 0){
         scanf("%s",command);
-        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -552,11 +641,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         c = getchar();
         scanf("%s",command);
         c = getchar();
@@ -568,11 +654,10 @@ void input(){
         scanf("%s",command);
         if(command[1] == 'f') forward = true;
         else forward = false;
-        removestr(forward);
+        if(found) removestr(forward);
         return; 
     }else if(strcmp(command,"copystr")==0){
         scanf("%s",command);
-        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -586,11 +671,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         c = getchar();
         scanf("%s",command);
         c = getchar();
@@ -602,11 +684,10 @@ void input(){
         scanf("%s",command);
         if(command[1] == 'f') forward = true;
         else forward = false;
-        copystr(forward);
+        if(found)copystr(forward);
         return; 
     }else if(strcmp(command,"cutstr")==0){
         scanf("%s",command);
-        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -620,11 +701,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         c = getchar();
         scanf("%s",command);
         c = getchar();
@@ -636,11 +714,10 @@ void input(){
         scanf("%s",command);
         if(command[1] == 'f') forward = true;
         else forward = false;
-        cutstr(forward);
+        if(found) cutstr(forward);
         return;
     }else if(strcmp(command,"pastestr")==0){
         scanf("%s",command);
-        bool not_found = false;
         char c = getchar();
         c = getchar();
         if(c=='/')
@@ -654,16 +731,13 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         c = getchar();
         scanf("%s",command);
         c = getchar();
         scanf("%d:%d",&line,&pos);
-        if(!not_found) insertstr(clipboard);
+        if(found) insertstr(clipboard);
         return;
     }   
     else if(strcmp(command,"replace")==0){
@@ -771,7 +845,6 @@ void input(){
         }
         c = getchar();
         scanf("%s",command);
-        bool not_found = false;
         c = getchar();
         c = getchar();
         if(c=='/')
@@ -785,11 +858,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         fgets(command,50,stdin);
         int state=0,n=0;
         // all at
@@ -809,7 +879,7 @@ void input(){
         // salam *ash
         // 1100-0001-1000-0110-0010-0100-0000
         if(state==0 || state==10 || state==1){
-        if(!not_found) replace(state,n);
+        if(found) replace(state,n);
         }else{
             printf("unable to combine options");
         }
@@ -872,7 +942,6 @@ void input(){
         }
         c = getchar();
         scanf("%s",command);
-        bool not_found = false;
         c = getchar();
         c = getchar();
         if(c=='/')
@@ -886,11 +955,8 @@ void input(){
             }
             dir[t] = '\0';
         }
-        if (access(dir, F_OK) == 0) {
-        }else{
-            printf("file not found\n");
-            not_found = true;
-        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
         fgets(command,50,stdin);
         int state=0,n=0;
         for(int i =0;i<strlen(command);i++){
@@ -913,7 +979,7 @@ void input(){
         // salam *ash
         // 1100-0001-1000-0110-0010-0100-0000
         if(state==0 || state==100 || state==10 || state==110 || state==1000 || state==1 || state==1100){
-        if(!not_found) find(state,n);
+        if(found) find(state,n);
         }else{
             printf("unable to combine options");
         }
@@ -996,7 +1062,9 @@ void input(){
                 }
                 dir[t] = '\0';
             }
-            grep(state);
+            bool found = existance();
+            memset(tmp,0,sizeof(tmp));
+            if(found) grep(state);
             c = getchar();
             if(c == '\n'){
                 break;
@@ -1007,6 +1075,26 @@ void input(){
         if(state == 2)
             printf("%d\n",linecounter);
         memset(str,0,sizeof(str));
+        return;
+    }else if(strcmp(command,"undo") == 0){
+        scanf("%s",command);
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
+        // printf("%s\n",dir);
+        if(found) undo();
         return;
     }else{
         printf("invalid command\n");
