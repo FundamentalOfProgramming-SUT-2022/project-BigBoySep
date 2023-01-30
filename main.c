@@ -509,6 +509,75 @@ void undo(){
     memset(tmp2,0,sizeof(tmp2));
 }
 
+void auto_indent(){
+    
+    FILE *fp,*tmpf;
+    fp = fopen(dir,"r");
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    rewind(fp);
+    fclose(fpu);
+    memset(tmp,0,sizeof(tmp));
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____temp.txt"); 
+    tmpf = fopen(tmp,"w+");
+    int tab=0,space=0;
+    bool ispace = false,open=false;
+    while((c=fgetc(fp)) != EOF){
+        if(c!=' ' && c!='{' && c!='}'){
+            if(open)
+                for(int i =0;i<tab;i++)
+                    fputc('\t',tmpf);
+            open = false;
+            if(ispace)
+                for(int i =0;i<space;i++)
+                    fputc(' ',tmpf);
+            ispace = true;
+            fputc(c,tmpf);
+            space = 0;
+        }
+        if(c==' '){
+            space++;
+        }
+        // {{}   }
+        if(c=='{'){
+            for(int i =0;i<tab;i++)
+                fputc('\t',tmpf);
+            tab++;
+            space =0;
+            if(ispace)
+                fputc(' ',tmpf);
+            fputs("{\n",tmpf);
+            ispace = false;
+            open = true;
+        }
+        if(c=='}'){
+            tab--;
+            space=0;
+            if(ispace){
+                fputc('\n',tmpf);
+            }
+            for(int i =0;i<tab;i++)
+                fputc('\t',tmpf);
+            fputs("}\n",tmpf);
+            ispace = false;
+        }
+    }
+    fclose(tmpf);
+    fclose(fp);
+    remove(dir);
+    rename(tmp,dir);
+    memset(tmp,0,sizeof(tmp));  
+}
+
 void input(){
     if(strcmp(command,"createfile") == 0){
         scanf("%s",command);
@@ -1095,6 +1164,26 @@ void input(){
         memset(tmp,0,sizeof(tmp));
         // printf("%s\n",dir);
         if(found) undo();
+        return;
+    }else if(strcmp(command,"auto-indent") == 0){
+        scanf("%s",command);
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
+        // printf("%s\n",dir);
+        if(found) auto_indent();
         return;
     }else{
         printf("invalid command\n");
