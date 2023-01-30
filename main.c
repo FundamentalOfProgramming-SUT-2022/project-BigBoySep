@@ -10,7 +10,7 @@
 
 bool forward = false;
 int line,pos,size;
-char command[50],dir[100],tmp[100],tmp2[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
+char command[50],dir[100],dir2[100],tmp[100],tmp2[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
 
 bool existance(){
     for(int i =0;i<strlen(dir);i++){
@@ -29,6 +29,26 @@ bool existance(){
         return true;
     }else{
         printf("File Does not exist\n");
+        return false;
+    }
+}
+bool existance2(){
+    for(int i =0;i<strlen(dir2);i++){
+        if(dir2[i] == '/'){
+            DIR* DIR = opendir(tmp);
+            if(DIR){
+            closedir(DIR);
+            }else if(ENOENT == errno) {
+                printf("Wrong second Address\n");
+                return false;
+            }
+        }
+        tmp[i] = dir2[i];
+    }
+    if (access(dir2, F_OK) == 0) {
+        return true;
+    }else{
+        printf("Second file Does not exist\n");
         return false;
     }
 }
@@ -576,6 +596,72 @@ void auto_indent(){
     remove(dir);
     rename(tmp,dir);
     memset(tmp,0,sizeof(tmp));  
+}
+
+void compare(){
+
+    FILE *fp1,*fp2;
+    fp1 = fopen(dir,"r");
+    fp2 = fopen(dir2,"r");
+    int line1=0,line2=0;
+    while(!feof(fp1)){
+        fgets(str,1000,fp1);
+        line1++;
+    }
+    while(!feof(fp2)){
+        fgets(str2,1000,fp2);
+        line2++;
+    }
+    rewind(fp1);
+    rewind(fp2);
+    if(line1>line2){
+        for(int i =1;i<=line2;i++){
+            fgets(str,1000,fp1);
+            fgets(str2,1000,fp2);
+            if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
+            if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
+            if(strcmp(str,str2) != 0){
+                printf("============ #%d ============\n",i);
+                printf("%s\n%s\n",str,str2);                
+            }
+        }
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line2+1,line1);
+        for(int i = line2+1;i<=line1;i++){
+            fgets(str,1000,fp1);
+            printf("%s\n",str);
+        }
+    }
+    if(line1<line2){
+        for(int i =1;i<=line1;i++){
+            fgets(str,1000,fp1);
+            fgets(str2,1000,fp2);
+            if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
+            if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
+            if(strcmp(str,str2) != 0){
+                printf("============ #%d ============\n",i);
+                printf("%s\n%s\n",str,str2);                
+            }
+        }
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line1+1,line2);
+        for(int i = line1+1;i<=line2;i++){
+            fgets(str2,1000,fp2);
+            printf("%s\n",str2);
+        }
+    }
+    if(line1==line2){
+        for(int i =1;i<=line1;i++){
+            fgets(str,1000,fp1);
+            fgets(str2,1000,fp2);
+            if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
+            if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
+            if(strcmp(str,str2) != 0){
+                printf("============ #%d ============\n",i);
+                printf("%s\n%s\n",str,str2);                
+            }
+        }
+    }
+    fclose(fp1);
+    fclose(fp2);
 }
 
 void input(){
@@ -1184,6 +1270,41 @@ void input(){
         memset(tmp,0,sizeof(tmp));
         // printf("%s\n",dir);
         if(found) auto_indent();
+        return;
+    }else if(strcmp(command,"compare") == 0){
+        scanf("%s",command);
+        char c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir[t]=c;
+                t++;
+            }
+            dir[t] = '\0';
+        }
+        c = getchar();
+        c = getchar();
+        if(c=='/')
+            scanf("%s",dir2);
+        else{
+            int t =0;
+            c = getchar();
+            while ((c=getchar()) != '"'){
+                dir2[t]=c;
+                t++;
+            }
+            dir2[t] = '\0';
+        }
+        bool found = existance();
+        memset(tmp,0,sizeof(tmp));
+        bool found2 = existance2();
+        memset(tmp,0,sizeof(tmp));
+        // printf("%s\n",dir);
+        if(found && found2) compare();
         return;
     }else{
         printf("invalid command\n");
