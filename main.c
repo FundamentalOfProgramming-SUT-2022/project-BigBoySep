@@ -9,7 +9,7 @@
 #include <dirent.h>
 
 bool forward = false;
-int line,pos,size;
+int line,pos,size,d;
 char command[50],dir[100],dir2[100],tmp[100],tmp2[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
 
 bool existance(){
@@ -664,6 +664,47 @@ void compare(){
     fclose(fp2);
 }
 
+void tree(char *basePath, const int root,int depth)
+{
+    
+    if(depth>=d && d!=-1)
+        return;
+    int i;
+    char path[1000],tpath[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(basePath);
+    if (!dir)
+        return;
+
+    while ((dp = readdir(dir)) != NULL)
+    {
+        strcpy(tpath, basePath);
+        strcat(tpath, "/");
+        strcat(tpath, dp->d_name);
+        if(GetFileAttributesA(tpath) != FILE_ATTRIBUTE_HIDDEN){
+            if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+            {
+                for (i=0; i<root; i++) 
+                {
+                    if (i%2 == 0 )
+                        printf("%c", 179);
+                    else
+                        printf(" ");
+
+                }
+                printf("%c%c%s\n", 195, 196, dp->d_name);
+
+                strcpy(path, basePath);
+                strcat(path, "/");
+                strcat(path, dp->d_name);
+                tree(path, root + 2,depth+1);
+            }
+        }
+    }
+
+    closedir(dir);
+}
+
 void input(){
     if(strcmp(command,"createfile") == 0){
         scanf("%s",command);
@@ -1306,6 +1347,14 @@ void input(){
         // printf("%s\n",dir);
         if(found && found2) compare();
         return;
+    }else if(strcmp(command,"tree") == 0){
+        scanf("%d",&d);
+        if(d<-1){
+            printf("Invalid depth\n");
+            return;
+        }
+        printf("root\n");
+        tree("./root",0,0);
     }else{
         printf("invalid command\n");
         gets(command);
