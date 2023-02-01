@@ -1,2 +1,30 @@
-Salam
-Khoubi?
+8 15
+8 15
+2 4
+1:0
+find2
+2
+1:0
+find1:0
+find8
+8
+root
+|--dir1
+| |--test1.txt
+| |--test2.txt
+| |--test3.txt
+| |--test4.txt
+| |--test5.txt
+|--dir2
+| |--dir2.1
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3
+|--dir3

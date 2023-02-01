@@ -8,9 +8,10 @@
 #include <windows.h>
 #include <dirent.h>
 
-bool forward = false;
+bool forward = false,isarman=false;
 int line,pos,size,d;
-char command[50],dir[100],dir2[100],tmp[100],tmp2[100],str[1000],str2[1000],buff_str[1000],clipboard[1000],linecounter=0;
+char command[50],dir[100],dir2[100],tmp[100],tmp2[100]
+,str[10000],str2[10000],buff_str[10000],clipboard[10000],arman[10000],out[10000],linecounter=0;
 
 bool existance(){
     for(int i =0;i<strlen(dir);i++){
@@ -53,6 +54,9 @@ bool existance2(){
     }
 }
 
+// in --> insert find grep
+// out -> cat grep compare tree find 
+
 void createfile(){
     if (access(dir, F_OK) == 0) {
         // file exists
@@ -93,9 +97,9 @@ void insertstr(const char *ins){
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
     }
-    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     rewind(fp);
     fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
@@ -141,14 +145,16 @@ void cat(){
         printf("File doesn't exist\n");
         return;
     }
+    memset(arman,0,sizeof(arman));
     FILE *fp;
     fp = fopen(dir,"r");
     char c = fgetc(fp);
     while (c!=EOF){
-        printf("%c",c);
+        if(isarman) strncat(arman,&c,1);
+        else printf("%c",c);
         c = fgetc(fp);
     }
-    printf("\n");
+    if(!isarman) printf("\n");
     fclose(fp);
 }
 
@@ -163,9 +169,9 @@ void removestr(bool fward){
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
     }
-    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     rewind(fp);
     fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
@@ -224,9 +230,9 @@ void cutstr(bool fward){
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
     }
-    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     rewind(fp);
     fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     memset(tmp,0,sizeof(tmp));
     memset(clipboard,0,sizeof(clipboard));
     strncpy(tmp,dir,strlen(dir)-4);
@@ -328,16 +334,16 @@ void copystr(bool fward){
     fclose(fp);
     memset(tmp,0,sizeof(tmp));
 }
-// 
-void find(int state,int n){
+
+void find(int state,int n,const char *fin){
 
     FILE *fp = fopen(dir,"r");
-    int len = strlen(str),i=0,pos_bychar[100],pos_byword[100],cnt=0,t=0,wcnt=1,ti,wi;
+    int len = strlen(fin),i=0,pos_bychar[100],pos_byword[100],cnt=0,t=0,wcnt=1,ti,wi;
     char c = fgetc(fp);
     bool found = false;
     t++;
     while (c!=EOF){
-        while (c!=EOF && c==str[i] && ++i<len){
+        while (c!=EOF && c==fin[i] && ++i<len){
             c=fgetc(fp);
             if(i==1){
                 wi = wcnt;
@@ -360,45 +366,131 @@ void find(int state,int n){
     fclose(fp);
     // all byword at cnt
     // *1100-0001-*1000-0110-0010-*0100-*0000
+    memset(arman,0,sizeof(arman));
     switch (state)
     {
     case 0:
-        if(found) printf("%d\n",pos_bychar[0]);
-        else printf("-1\n");
+        if(isarman){
+            if(found){
+                char num[5];
+                sprintf(num,"%d",pos_bychar[0]);
+                strcat(arman,num);
+                strcat(arman,"\n");
+            }else strcat(arman,"-1\n");
+        }else{
+            if(found) printf("%d\n",pos_bychar[0]);
+            else printf("-1\n");
+        }
         break;
     case 1000:
-        if(found){
+        if(isarman){
+            if(found){
+            for(int i =0;i<cnt;i++){
+                if(i!=0){
+                    char num[5];
+                    sprintf(num,"%d",pos_bychar[i]);
+                    strcat(arman,", ");
+                    strcat(arman,num);
+                }
+                else{
+                    char num[5];
+                    sprintf(num,"%d",pos_bychar[i]);
+                    strcat(arman,num);
+                }
+            }
+            strcat(arman,"\n");
+        }else strcat(arman,"-1");
+        }else{ 
+            if(found){
             for(int i =0;i<cnt;i++){
                 if(i!=0) printf(", %d",pos_bychar[i]);
                 else printf("%d",pos_bychar[i]);
             }
             printf("\n");
         }else printf("-1");
+        }
         break;
     case 100:
-        if(found) printf("%d\n",pos_byword[0]);
-        else printf("-1\n");
+        if(isarman){
+            if(found){
+                char num[5];
+                sprintf(num,"%d",pos_byword[0]);
+                strcat(arman,num);
+                strcat(arman,"\n");
+            }else strcat(arman,"-1\n");
+        }else{
+            if(found) printf("%d\n",pos_byword[0]);
+            else printf("-1\n");
+        }
         break;
     case 1100:
-        if(found){
+        if(isarman){
+            if(found){
+            for(int i =0;i<cnt;i++){
+                if(i!=0){
+                    char num[5];
+                    sprintf(num,"%d",pos_byword[i]);
+                    strcat(arman,", ");
+                    strcat(arman,num);
+                }
+                else{
+                    char num[5];
+                    sprintf(num,"%d",pos_byword[i]);
+                    strcat(arman,num);
+                }
+            }
+            strcat(arman,"\n");
+        }else strcat(arman,"-1");
+        }else{ 
+            if(found){
             for(int i =0;i<cnt;i++){
                 if(i!=0) printf(", %d",pos_byword[i]);
                 else printf("%d",pos_byword[i]);
             }
             printf("\n");
         }else printf("-1");
+        }
         break; 
     case 1:
-        if(found)printf("%d\n",cnt);
-        else printf("0\n");
+        if(isarman){
+            if(found){
+                char num[5];
+                sprintf(num,"%d",cnt);
+                strcat(arman,num);
+                strcat(arman,"\n");
+            }else strcat(arman,"0\n");
+        }else{
+            if(found)printf("%d\n",cnt);
+            else printf("0\n");
+        }
         break;
     case 10:
-        if(found && n<=cnt) printf("%d\n",pos_bychar[n-1]);
-        else printf("-1\n");
+        if(isarman){
+            if(found && n<=cnt){
+                char num[5];
+                sprintf(num,"%d",pos_bychar[n-1]);
+                strcat(arman,num);
+                strcat(arman,"\n");
+            }
+            else strcat(arman,"-1\n");
+        }else{
+            if(found && n<=cnt) printf("%d\n",pos_bychar[n-1]);
+            else printf("-1\n");
+        }
         break;
     case 110:   
-        if(found && n<=cnt) printf("%d\n",pos_byword[n-1]);
-        else printf("-1\n");
+        if(isarman){
+            if(found && n<=cnt){
+                char num[5];
+                sprintf(num,"%d",pos_byword[n-1]);
+                strcat(arman,num);
+                strcat(arman,"\n");
+            }
+            else strcat(arman,"-1\n");
+        }else{
+            if(found && n<=cnt) printf("%d\n",pos_byword[n-1]);
+            else printf("-1\n");
+        }
         break;
     default:
         break;
@@ -417,9 +509,9 @@ void replace(int state,int n){
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
     }
-    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     rewind(fp);
     fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
@@ -497,21 +589,28 @@ void replace(int state,int n){
     // *1100-0001-*1000-0110-0010-*0100-*0000
 }
 
-void grep(int state){
+void grep(int state,const char *grp){
     FILE *fp = fopen(dir,"r");
     bool isvalid = false;
     while (!feof(fp)){
         fgets(buff_str,1000,fp);
-        if(strstr(buff_str,str)!=NULL){
+        if(strstr(buff_str,grp)!=NULL){
             linecounter++;
             isvalid = true;
-            if(state == 1)
-                printf("%s: %s",dir,buff_str);
-            if(buff_str[strlen(buff_str)-1]!='\n') printf("\n");
+            if(state == 1){
+                // printf("%s: %s",dir,buff_str);
+                strcat(out,dir);
+                strcat(out,": ");
+                strcat(out,buff_str);
+                if(buff_str[strlen(buff_str)-1]!='\n') strcat(out,"\n");
+            }
         }
     }
-    if(state == 3 && isvalid == true)
-        printf("%s\n",dir);
+    if(state == 3 && isvalid == true){
+        strcat(out,dir);
+        strcat(out,"\n");
+    }
+        // printf("%s\n",dir);
     fclose(fp);
 }
 
@@ -542,9 +641,9 @@ void auto_indent(){
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
     }
-    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     rewind(fp);
     fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
     memset(tmp,0,sizeof(tmp));
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____temp.txt"); 
@@ -569,8 +668,9 @@ void auto_indent(){
         }
         // {{}   }
         if(c=='{'){
-            for(int i =0;i<tab;i++)
-                fputc('\t',tmpf);
+            if(!ispace)
+                for(int i =0;i<tab;i++)
+                    fputc('\t',tmpf);
             tab++;
             space =0;
             if(ispace)
@@ -600,6 +700,7 @@ void auto_indent(){
 
 void compare(){
 
+    memset(arman,0,sizeof(arman));
     FILE *fp1,*fp2;
     fp1 = fopen(dir,"r");
     fp2 = fopen(dir2,"r");
@@ -621,14 +722,39 @@ void compare(){
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
             if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
             if(strcmp(str,str2) != 0){
-                printf("============ #%d ============\n",i);
-                printf("%s\n%s\n",str,str2);                
+                if(isarman){
+                    strcat(arman,"============ #");
+                    char num[5];
+                    sprintf(num,"%d",i);
+                    strcat(arman,num);
+                    strcat(arman," ============\n");
+                    strcat(arman,str);
+                    strcat(arman,"\n");
+                    strcat(arman,str2);
+                    strcat(arman,"\n");
+                }else{
+                    printf("============ #%d ============\n",i);
+                    printf("%s\n%s\n",str,str2);
+                }                
             }
         }
-        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line2+1,line1);
+        if(isarman){
+            strcat(arman,">>>>>>>>>>>> #");
+            char num[5];
+            sprintf(num,"%d",line2+1);
+            strcat(arman,num);
+            strcat(arman," - #");
+            sprintf(num,"%d",line1);
+            strcat(arman,num);
+            strcat(arman," >>>>>>>>>>>>\n");
+        }
+        else printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line2+1,line1);
         for(int i = line2+1;i<=line1;i++){
             fgets(str,1000,fp1);
-            printf("%s\n",str);
+            if(isarman){
+                strcat(arman,str);
+                strcat(arman,"\n");
+            }else printf("%s\n",str);
         }
     }
     if(line1<line2){
@@ -638,14 +764,39 @@ void compare(){
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
             if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
             if(strcmp(str,str2) != 0){
-                printf("============ #%d ============\n",i);
-                printf("%s\n%s\n",str,str2);                
+                if(isarman){
+                    strcat(arman,"============ #");
+                    char num[5];
+                    sprintf(num,"%d",i);
+                    strcat(arman,num);
+                    strcat(arman," ============\n");
+                    strcat(arman,str);
+                    strcat(arman,"\n");
+                    strcat(arman,str2);
+                    strcat(arman,"\n");
+                }else{
+                    printf("============ #%d ============\n",i);
+                    printf("%s\n%s\n",str,str2);
+                }
             }
         }
-        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line1+1,line2);
+        if(isarman){
+            strcat(arman,">>>>>>>>>>>> #");
+            char num[5];
+            sprintf(num,"%d",line1+1);
+            strcat(arman,num);
+            strcat(arman," - #");
+            sprintf(num,"%d",line2);
+            strcat(arman,num);
+            strcat(arman," >>>>>>>>>>>>\n");
+        }
+        else printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line1+1,line2);
         for(int i = line1+1;i<=line2;i++){
             fgets(str2,1000,fp2);
-            printf("%s\n",str2);
+            if(isarman){
+                strcat(arman,str2);
+                strcat(arman,"\n");
+            }else printf("%s\n",str2);
         }
     }
     if(line1==line2){
@@ -655,8 +806,20 @@ void compare(){
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
             if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
             if(strcmp(str,str2) != 0){
-                printf("============ #%d ============\n",i);
-                printf("%s\n%s\n",str,str2);                
+                if(isarman){
+                    strcat(arman,"============ #");
+                    char num[5];
+                    sprintf(num,"%d",i);
+                    strcat(arman,num);
+                    strcat(arman," ============\n");
+                    strcat(arman,str);
+                    strcat(arman,"\n");
+                    strcat(arman,str2);
+                    strcat(arman,"\n");
+                }else{
+                    printf("============ #%d ============\n",i);
+                    printf("%s\n%s\n",str,str2);
+                }                
             }
         }
     }
@@ -686,13 +849,24 @@ void tree(char *basePath, const int root,int depth)
             {
                 for (i=0; i<root; i++) 
                 {
-                    if (i%2 == 0 )
-                        printf("%c", 179);
+                    if (i%2 == 0 ){
+                        char c = 179;
+                        if(isarman) strcat(arman,"|");
+                        else printf("%c", 179);
+                    }
                     else
-                        printf(" ");
+                        if(isarman) strcat(arman," ");
+                        else printf(" ");
 
                 }
-                printf("%c%c%s\n", 195, 196, dp->d_name);
+                if(isarman){
+                    char c = 195;
+                    strcat(arman,"|-");
+                    c = 196;
+                    strcat(arman,"-");
+                    strcat(arman, (dp->d_name));
+                    strcat(arman,"\n");
+                }else printf("%c%c%s\n", 195, 196, dp->d_name);
 
                 strcpy(path, basePath);
                 strcat(path, "/");
@@ -741,65 +915,71 @@ void input(){
         }
         bool found = existance();
         memset(tmp,0,sizeof(tmp));
-        c = getchar();
-        scanf("%s",command);
-        c = getchar();
-        c = getchar();
-        if(c!='"'){
-            str[0] = c;
-            int t= 1;
-            while ((c=getchar()) != ' ')
-            {
-                str[t] = c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
+        if(!isarman){
+            c = getchar();
+            scanf("%s",command);
+            c = getchar();
+            c = getchar();
+            if(c!='"'){
+                str[0] = c;
+                int t= 1;
+                while ((c=getchar()) != ' ')
+                {
+                    str[t] = c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
                 }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
             }
-        }
-        else{
-            int t =0;
-            // c = getchar();
-            while ((c=getchar()) != '"' || str[t-1] == '\\'){
-                str[t]=c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
+            else{
+                int t =0;
+                // c = getchar();
+                while ((c=getchar()) != '"' || str[t-1] == '\\'){
+                    str[t]=c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
                 }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
+                str[t] = '\0';
             }
-            str[t] = '\0';
         }
         c = getchar();
         scanf("%s",command);
         c = getchar();
         scanf("%d:%d",&line,&pos);
         // printf("%s",str);
-        if(found) insertstr(str);
-        memset(str,0,sizeof(str));
+        if(isarman){
+            if(found) insertstr(arman);
+        }else{
+            if(found) insertstr(str);
+            memset(str,0,sizeof(str));
+        }
         return;
         
     }else if(strcmp(command,"cat") == 0){
@@ -817,10 +997,21 @@ void input(){
             }
             dir[t] = '\0';
         }
-        bool found = existance();
-        memset(tmp,0,sizeof(tmp));
-        // printf("%s\n",dir);
-        if(found)cat();
+        if((c=getchar()) == ' '){
+            scanf("%s",command);
+            scanf("%s",command);
+            isarman = true;
+            bool found = existance();
+            memset(tmp,0,sizeof(tmp));
+            if(found)cat();
+            input();
+            isarman = false;
+        }else{
+            bool found = existance();
+            memset(tmp,0,sizeof(tmp));
+            // printf("%s\n",dir);
+            if(found)cat();
+        }
         return;
     }else if(strcmp(command,"removestr") == 0){
         scanf("%s",command);
@@ -1085,56 +1276,61 @@ void input(){
         memset(str2,0,sizeof(str2));
         return;
     }else if(strcmp(command,"find")==0){
-        scanf("%s",command);
-        char c = getchar();
-        c = getchar();
-        if(c!='"'){
-            str[0] = c;
-            int t= 1;
-            while ((c=getchar()) != ' ')
-            {
-                str[t] = c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
+        bool isarman_inner = false;
+        memset(out,0,sizeof(out));
+        char c;
+        if(!isarman){
+            scanf("%s",command);
+            c = getchar();
+            c = getchar();
+            if(c!='"'){
+                str[0] = c;
+                int t= 1;
+                while ((c=getchar()) != ' ')
+                {
+                    str[t] = c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
                 }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
             }
-        }
-        else{
-            int t =0;
-            // c = getchar();
-            while ((c=getchar()) != '"' || str[t-1] == '\\'){
-                str[t]=c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
+            else{
+                int t =0;
+                // c = getchar();
+                while ((c=getchar()) != '"' || str[t-1] == '\\'){
+                    str[t]=c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
                 }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
+                str[t] = '\0';
             }
-            str[t] = '\0';
         }
         c = getchar();
         scanf("%s",command);
@@ -1153,8 +1349,17 @@ void input(){
         }
         bool found = existance();
         memset(tmp,0,sizeof(tmp));
-        fgets(command,50,stdin);
+        memset(command,0,sizeof(command));
         int state=0,n=0;
+        int t=0;
+        while((c=getchar())!='\n'){
+            command[t] = c;
+            if(c == 'D' && command[t-1] == '='){
+                isarman_inner = true;
+                break;
+            }
+            t++;
+        }
         for(int i =0;i<strlen(command);i++){
             if(command[i] == '-'){
                 if(command[i+1] == 'c')
@@ -1174,15 +1379,39 @@ void input(){
         // all byword at cnt
         // salam *ash
         // 1100-0001-1000-0110-0010-0100-0000
+        if(isarman_inner){
+            getchar();
+            scanf("%s",command);
+            if(state==0 || state==100 || state==10 || state==110 || state==1000 || state==1 || state==1100){
+                if(isarman){
+                if(found) find(state,n,arman);
+                }else if(found){
+                    isarman = true;
+                    find(state,n,str);
+                    }
+                }else{
+                    memset(arman,0,sizeof(arman));
+                    isarman = true;
+                    strcat(arman,"unable to combine options\n");
+                }
+            memset(str,0,sizeof(str));
+            input();
+            isarman = false;
+            return;
+        }
         if(state==0 || state==100 || state==10 || state==110 || state==1000 || state==1 || state==1100){
-        if(found) find(state,n);
+        if(isarman){
+        if(found) find(state,n,arman);
+        }else if(found) find(state,n,str);
         }else{
-            printf("unable to combine options");
+            printf("unable to combine options\n");
         }
         memset(str,0,sizeof(str));
         return;
     }else if(strcmp(command,"grep")==0){
+        memset(out,0,sizeof(out));
         int state;
+        bool isarman_inner = false;
         linecounter=0;
         scanf("%s",command);
         if(strcmp(command,"-c")==0 || strcmp(command,"-l") == 0){ 
@@ -1192,61 +1421,83 @@ void input(){
                 state = 3;
             scanf("%s",command);
         }else state = 1;
-        char c = getchar();
-        c = getchar();
-        if(c!='"'){
-            str[0] = c;
-            int t= 1;
-            while ((c=getchar()) != ' ')
-            {
-                str[t] = c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
+        char c;
+        if(!isarman){
+            c = getchar();
+            c = getchar();
+            if(c!='"'){
+                str[0] = c;
+                int t= 1;
+                while ((c=getchar()) != ' ')
+                {
+                    str[t] = c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
                 }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
             }
-        }
-        else{
-            int t =0;
+            else{
+                int t =0;
+                // c = getchar();
+                while ((c=getchar()) != '"' || str[t-1] == '\\'){
+                    str[t]=c;
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
+                        str[t-1] = '\n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
+                        str[t-1] = 'n';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '"' && str[t-1] == '\\'){
+                        str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    t++;
+                }
+                str[t] = '\0';
+            }
             // c = getchar();
-            while ((c=getchar()) != '"' || str[t-1] == '\\'){
-                str[t]=c;
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]!='\\'){
-                    str[t-1] = '\n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == 'n' && str[t-1]=='\\' && str[t-2]=='\\'){
-                    str[t-1] = 'n';
-                    str[t] = '\0';
-                    t--;
-                }
-                if(str[t] == '"' && str[t-1] == '\\'){
-                    str[t-1] = '"';
-                    str[t] = '\0';
-                    t--;
-                }
-                t++;
-            }
-            str[t] = '\0';
+            scanf("%s",command);
         }
-        // c = getchar();
-        scanf("%s",command);
         c = getchar();
         c = getchar();
         while (c!='\n'){
+            if(c=='='){
+                getchar();
+                getchar();
+                scanf("%s",command);
+                isarman = true;
+                if(state == 2){
+                    // printf("%d\n",linecounter);
+                    char d = '0' + linecounter;
+                    strcat(out,&d);
+                    strcat(out,"\n");
+                }
+                strcpy(arman,out);
+                // printf("%s",command);
+                input();
+                memset(arman,0,sizeof(arman));
+                isarman = false;
+                isarman_inner = true;
+                break;
+            }
             if(c=='/')
                 scanf("%s",dir);
             else{
@@ -1260,7 +1511,9 @@ void input(){
             }
             bool found = existance();
             memset(tmp,0,sizeof(tmp));
-            if(found) grep(state);
+            if(isarman){
+            if(found) grep(state,arman);
+            }else if(found) grep(state,str);
             c = getchar();
             if(c == '\n'){
                 break;
@@ -1268,8 +1521,17 @@ void input(){
             memset(dir,0,sizeof(dir));
             c=getchar();
         }
-        if(state == 2)
-            printf("%d\n",linecounter);
+        if(state == 2 && !isarman_inner){
+            // printf("%d\n",linecounter);
+            char d = '0' + linecounter;
+            strcat(out,&d);
+            strcat(out,"\n");
+        }
+        // printf("asas");
+        if(!isarman_inner){
+            printf("%s",out);
+            memset(out,0,sizeof(out));
+        }
         memset(str,0,sizeof(str));
         return;
     }else if(strcmp(command,"undo") == 0){
@@ -1340,12 +1602,25 @@ void input(){
             }
             dir2[t] = '\0';
         }
-        bool found = existance();
-        memset(tmp,0,sizeof(tmp));
-        bool found2 = existance2();
-        memset(tmp,0,sizeof(tmp));
-        // printf("%s\n",dir);
-        if(found && found2) compare();
+        if((c=getchar()) == ' '){
+            scanf("%s",command);
+            scanf("%s",command);
+            isarman = true;
+            bool found = existance();
+            memset(tmp,0,sizeof(tmp));
+            bool found2 = existance2();
+            memset(tmp,0,sizeof(tmp));
+            if(found && found2) compare();
+            input();
+            isarman = false;
+        }else{
+            bool found = existance();
+            memset(tmp,0,sizeof(tmp));
+            bool found2 = existance2();
+            memset(tmp,0,sizeof(tmp));
+            // printf("%s\n",dir);
+            if(found && found2) compare();
+        }
         return;
     }else if(strcmp(command,"tree") == 0){
         scanf("%d",&d);
@@ -1353,8 +1628,20 @@ void input(){
             printf("Invalid depth\n");
             return;
         }
+        char c;
+        if((c=getchar()) == ' '){
+            scanf("%s",command);
+            scanf("%s",command);
+            isarman = true;
+            memset(arman,0,sizeof(arman));
+            strcat(arman,"root\n");
+            tree("./root",0,0);
+            input();
+            isarman = false;
+        }else{
         printf("root\n");
         tree("./root",0,0);
+        }
     }else{
         printf("invalid command\n");
         gets(command);
