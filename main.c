@@ -8,10 +8,10 @@
 #include <windows.h>
 #include <dirent.h>
 
-bool forward = false,isarman=false;
+bool forward = false,isarman=false,isclip = false;
 int line,pos,size,d;
 char command[50],dir[100],dir2[100],tmp[100],tmp2[100]
-,str[10000],str2[10000],buff_str[10000],clipboard[10000],arman[10000],out[10000],linecounter=0;
+,str[10000],str2[10000],buff_str[10000],clipboard[100000],arman[10000],out[10000],linecounter=0;
 
 bool existance(){
     for(int i =0;i<strlen(dir);i++){
@@ -165,6 +165,7 @@ void removestr(bool fward){
     strcat(tmp,"____undo.txt"); 
     SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
     fpu = fopen(tmp,"w");
+    fp = fopen(dir,"r");
     char c;
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
@@ -221,11 +222,14 @@ void removestr(bool fward){
 
 void cutstr(bool fward){
     FILE *fp,*tmpf;
-    FILE *fpu;
+    FILE *fpu,*fpc;
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_NORMAL);
+    fpc = fopen("./root/clipboard.txt","w");
     strncpy(tmp,dir,strlen(dir)-4);
     strcat(tmp,"____undo.txt"); 
     SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
     fpu = fopen(tmp,"w");
+    fp = fopen(dir,"r");
     char c;
     while ((c=fgetc(fp))!=EOF){
         fputc(c,fpu);
@@ -266,7 +270,8 @@ void cutstr(bool fward){
             if(!(t>ts && t<=ts+size)){
                 fputc(c,tmpf);
             }else{
-                clipboard[counter] = c;
+                fputc(c,fpc);
+                // clipboard[counter] = c;
                 counter++;
             }
         }
@@ -274,7 +279,8 @@ void cutstr(bool fward){
             if(!(t<=ts && t>ts-size)){
                 fputc(c,tmpf);
             }else{
-                clipboard[counter] = c;
+                fputc(c,fpc);
+                // clipboard[counter] = c;
                 counter++;
             }
         }
@@ -282,6 +288,8 @@ void cutstr(bool fward){
         t++;
     }
     fclose(tmpf);
+    fclose(fpc);
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_HIDDEN);
     fclose(fp);
     remove(dir);
     rename(tmp,dir);
@@ -290,7 +298,9 @@ void cutstr(bool fward){
 
 void copystr(bool fward){
     memset(clipboard,0,sizeof(clipboard));
-    FILE *fp;
+    FILE *fp,*fpc;
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_NORMAL);
+    fpc = fopen("./root/clipboard.txt","w");
     fp = fopen(dir,"r");
     int t=0,p=0,l=1,ts;
     // 12345678910
@@ -318,13 +328,15 @@ void copystr(bool fward){
     while (c!=EOF){
         if(fward){
             if((t>ts && t<=ts+size)){
-                clipboard[counter] = c;
+                fputc(c,fpc);
+                // clipboard[counter] = c;
                 counter++;
             }
         }
         if(!fward){
             if((t<=ts && t>ts-size)){
-                clipboard[counter] = c;
+                fputc(c,fpc);
+                // clipboard[counter] = c;
                 counter++;
             }
         }
@@ -332,6 +344,74 @@ void copystr(bool fward){
         t++;
     }
     fclose(fp);
+    fclose(fpc);
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_HIDDEN);
+    memset(tmp,0,sizeof(tmp));
+}
+
+void pastestr(){
+    FILE *fp,*tmpf,*fpc;
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_NORMAL);
+    fpc = fopen("./root/clipboard.txt","r");
+    fp = fopen(dir,"r");
+    FILE *fpu;
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____undo.txt"); 
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_NORMAL);
+    fpu = fopen(tmp,"w");
+    char c;
+    while ((c=fgetc(fp))!=EOF){
+        fputc(c,fpu);
+    }
+    rewind(fp);
+    fclose(fpu);
+    SetFileAttributes(tmp,FILE_ATTRIBUTE_HIDDEN);
+    memset(tmp,0,sizeof(tmp));
+    strncpy(tmp,dir,strlen(dir)-4);
+    strcat(tmp,"____temp.txt"); 
+    tmpf = fopen(tmp,"w+");
+    // fputs(str,tmpf);
+    bool keep_reading = true;
+    int current_line = 1;
+    while (keep_reading){
+        fgets(buff_str,1000,fp);
+        if(feof(fp)) keep_reading = false;
+        // printf("%d",keep_reading);
+        if(line == current_line){
+            for(int i =0;i<strlen(buff_str);i++){
+                if(i==pos){
+                    while((c = fgetc(fpc))!=EOF){
+                        fputc(c,tmpf);
+                    }
+                }
+                fputc(buff_str[i],tmpf);
+            }
+            if(strlen(buff_str) == pos){
+                while((c = fgetc(fpc))!=EOF){
+                        fputc(c,tmpf);
+                }
+            }
+            // fprintf(tmpf,"chert\nchert");
+            // printf("aa\n");
+            // printf("%s",str);
+            // printf("%s",buff_str);
+        }else{
+        fputs(buff_str,tmpf);
+        }
+        current_line++;
+    }
+    if(current_line == line){
+        fputc('\n',tmpf);
+        while((c = fgetc(fpc))!=EOF){
+            fputc(c,tmpf);
+        }
+    }
+    fclose(tmpf);
+    fclose(fpc);
+    SetFileAttributes("./root/clipboard.txt",FILE_ATTRIBUTE_HIDDEN);
+    fclose(fp);
+    remove(dir);
+    rename(tmp,dir);
     memset(tmp,0,sizeof(tmp));
 }
 
@@ -551,17 +631,27 @@ void replace(int state,int n){
                 if(!(i>=pos_bychar[0] && i<pos_bychar[0]+len)) fputc(c,ftmp);  
                 i++;  
             }
-        }else printf("-1\n");
+        }else {
+            while ((c=fgetc(fp))!=EOF){
+                fputc(c,ftmp);  
+            }
+            printf("-1\n");
+        }
         break;
     case 1:
-        if(found){
+        if(found && n<=cnt){
             i=0;
             while ((c=fgetc(fp))!=EOF){
                 if(i==pos_bychar[n-1]) fputs(str2,ftmp);
                 if(!(i>=pos_bychar[n-1] && i<pos_bychar[n-1]+len)) fputc(c,ftmp);  
                 i++;  
             }
-        }else printf("-1\n");
+        }else {
+            while ((c=fgetc(fp))!=EOF){
+                fputc(c,ftmp);  
+            }
+            printf("-1\n");
+        }
         break;
     case 10:
         t=0;
@@ -573,7 +663,12 @@ void replace(int state,int n){
                 if(!(i>=pos_bychar[t] && i<pos_bychar[t]+len)) fputc(c,ftmp);  
                 i++;  
             }
-        }else printf("-1\n");
+        }else {
+            while ((c=fgetc(fp))!=EOF){
+                fputc(c,ftmp);  
+            }
+            printf("-1\n");
+        }
         break;
         
         break;
@@ -717,6 +812,8 @@ void compare(){
     rewind(fp2);
     if(line1>line2){
         for(int i =1;i<=line2;i++){
+            memset(str,0,sizeof(str));
+            memset(str2,0,sizeof(str2));
             fgets(str,1000,fp1);
             fgets(str2,1000,fp2);
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
@@ -750,7 +847,9 @@ void compare(){
         }
         else printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line2+1,line1);
         for(int i = line2+1;i<=line1;i++){
+            memset(str,0,sizeof(str));
             fgets(str,1000,fp1);
+            if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
             if(isarman){
                 strcat(arman,str);
                 strcat(arman,"\n");
@@ -759,6 +858,8 @@ void compare(){
     }
     if(line1<line2){
         for(int i =1;i<=line1;i++){
+            memset(str,0,sizeof(str));
+            memset(str,0,sizeof(str2));
             fgets(str,1000,fp1);
             fgets(str2,1000,fp2);
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
@@ -792,7 +893,9 @@ void compare(){
         }
         else printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",line1+1,line2);
         for(int i = line1+1;i<=line2;i++){
+            memset(str2,0,sizeof(str2));
             fgets(str2,1000,fp2);
+            if(str2[strlen(str2)-1] == '\n')str2[strlen(str2)-1] = '\0';
             if(isarman){
                 strcat(arman,str2);
                 strcat(arman,"\n");
@@ -801,6 +904,8 @@ void compare(){
     }
     if(line1==line2){
         for(int i =1;i<=line1;i++){
+            memset(str,0,sizeof(str));
+            memset(str2,0,sizeof(str2));
             fgets(str,1000,fp1);
             fgets(str2,1000,fp2);
             if(str[strlen(str)-1] == '\n')str[strlen(str)-1] = '\0';
@@ -1124,7 +1229,7 @@ void input(){
         scanf("%s",command);
         c = getchar();
         scanf("%d:%d",&line,&pos);
-        if(found) insertstr(clipboard);
+        pastestr();
         return;
     }   
     else if(strcmp(command,"replace")==0){
@@ -1304,6 +1409,11 @@ void input(){
                         str[t] = '\0';
                         t--;
                     }
+                    if(str[t] == '*' && str[t-1] == '\\'){
+                        str[t-1] = '*';
+                        str[t] = '\0';
+                        t--;
+                    }
                     t++;
                 }
             }
@@ -1324,6 +1434,11 @@ void input(){
                     }
                     if(str[t] == '"' && str[t-1] == '\\'){
                         str[t-1] = '"';
+                        str[t] = '\0';
+                        t--;
+                    }
+                    if(str[t] == '*' && str[t-1] == '\\'){
+                        str[t-1] = '*';
                         str[t] = '\0';
                         t--;
                     }
@@ -1486,8 +1601,10 @@ void input(){
                 isarman = true;
                 if(state == 2){
                     // printf("%d\n",linecounter);
-                    char d = '0' + linecounter;
-                    strcat(out,&d);
+                    char d[5];
+                    memset(d,0,sizeof(d));
+                    sprintf(d,"%d",linecounter);
+                    strcat(out,d);
                     strcat(out,"\n");
                 }
                 strcpy(arman,out);
@@ -1523,8 +1640,10 @@ void input(){
         }
         if(state == 2 && !isarman_inner){
             // printf("%d\n",linecounter);
-            char d = '0' + linecounter;
-            strcat(out,&d);
+            char d[5];
+            memset(d,0,sizeof(d));
+            sprintf(d,"%d",linecounter);
+            strcat(out,d);
             strcat(out,"\n");
         }
         // printf("asas");
